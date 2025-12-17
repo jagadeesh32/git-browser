@@ -1,8 +1,9 @@
 """Main Git repository parser."""
 
 import os
+import difflib
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from .models import (
     GitRepository,
     GitBranch,
@@ -257,3 +258,162 @@ class GitParser:
             graph_nodes.append(node)
 
         return graph_nodes
+
+    def compare_trees(self, old_tree_sha: Optional[str], new_tree_sha: str) -> List[GitFileChange]:
+        """Compare two trees and return file changes.
+
+        Args:
+            old_tree_sha: Parent tree SHA (None for initial commit)
+            new_tree_sha: Current tree SHA
+
+        Returns:
+            List of GitFileChange objects
+        """
+        # Get tree contents for both trees
+        old_files = self.object_parser.get_tree_contents(old_tree_sha) if old_tree_sha else {}
+        new_files = self.object_parser.get_tree_contents(new_tree_sha)
+
+        file_changes = []
+
+        # Find all unique file paths
+        all_paths = set(old_files.keys()) | set(new_files.keys())
+
+        for path in sorted(all_paths):
+            old_sha = old_files.get(path)
+            new_sha = new_files.get(path)
+
+            if old_sha == new_sha:
+                # File unchanged
+                continue
+            elif old_sha is None:
+                # File added
+                diff_data = self.generate_diff(None, new_sha, path)
+                file_changes.append(
+                    GitFileChange(
+                        path=path,
+                        change_type="added",
+                        additions=diff_data["additions"],
+                        deletions=diff_data["deletions"],
+                    )
+                )
+            elif new_sha is None:
+                # File deleted
+                diff_data = self.generate_diff(old_sha, None, path)
+                file_changes.append(
+                    GitFileChange(
+                        path=path,
+                        change_type="deleted",
+                        additions=diff_data["additions"],
+                        deletions=diff_data["deletions"],
+                    )
+                )
+            else:
+                # File modified
+                diff_data = self.generate_diff(old_sha, new_sha, path)
+                file_changes.append(
+                    GitFileChange(
+                        path=path,
+                        change_type="modified",
+                        additions=diff_data["additions"],
+                        deletions=diff_data["deletions"],
+                    )
+                )
+
+        return file_changes
+
+    def generate_diff(self, old_sha: Optional[str], new_sha: Optional[str], path: str) -> Dict[str, Any]:
+        """Generate unified diff for a file change.
+
+        Args:
+            old_sha: Old blob SHA (None for new files)
+            new_sha: New blob SHA (None for deleted files)
+            path: File path
+
+        Returns:
+            Dictionary with diff information:
+            {
+                "path": str,
+                "old_sha": str,
+                "new_sha": str,
+                "is_binary": bool,
+                "diff": str (unified diff format),
+                "additions": int,
+                "deletions": int
+            }
+        """
+        # Read blob contents
+        old_content = self.object_parser.read_blob(old_sha) if old_sha else b""
+        new_content = self.object_parser.read_blob(new_sha) if new_sha else b""
+
+        # Check if binary (try to decode as UTF-8)
+        try:
+            old_lines = old_content.decode("utf-8").splitlines(keepends=True)
+            new_lines = new_content.decode("utf-8").splitlines(keepends=True)
+        except UnicodeDecodeError:
+            return {
+                "path": path,
+                "old_sha": old_sha,
+                "new_sha": new_sha,
+                "is_binary": True,
+                "diff": None,
+                "additions": 0,
+                "deletions": 0,
+            }
+
+        # Generate unified diff
+        diff_lines = list(
+            difflib.unified_diff(
+                old_lines,
+                new_lines,
+                fromfile=f"a/{path}",
+                tofile=f"b/{path}",
+                lineterm="",
+            )
+        )
+
+        # Count changes (excluding header lines)
+        additions = sum(1 for line in diff_lines if line.startswith("+") and not line.startswith("+++"))
+        deletions = sum(1 for line in diff_lines if line.startswith("-") and not line.startswith("---"))
+
+        return {
+            "path": path,
+            "old_sha": old_sha,
+            "new_sha": new_sha,
+            "is_binary": False,
+            "diff": "\n".join(diff_lines),
+            "additions": additions,
+            "deletions": deletions,
+        }
+
+    def get_commit_details(self, sha: str) -> Optional[GitCommitDetails]:
+        """Get detailed commit information including file changes.
+
+        Args:
+            sha: Commit SHA
+
+        Returns:
+            GitCommitDetails with commit info and file changes
+        """
+        commit = self.get_commit(sha)
+        if not commit:
+            return None
+
+        # Handle multiple parents (merge commits):
+        # Use first parent for comparison (main branch)
+        parent_tree = None
+        if commit.parents:
+            parent_commit = self.get_commit(commit.parents[0])
+            if parent_commit:
+                parent_tree = parent_commit.tree
+
+        # Compare trees
+        files = self.compare_trees(parent_tree, commit.tree)
+
+        # Calculate stats
+        stats = {
+            "files_changed": len(files),
+            "additions": sum(f.additions for f in files),
+            "deletions": sum(f.deletions for f in files),
+        }
+
+        return GitCommitDetails(commit=commit, files=files, stats=stats)

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { gitApi } from './services/api';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Header from './components/Header';
 import GraphPage from './pages/GraphPage';
 import CommitsPage from './pages/CommitsPage';
@@ -27,25 +28,27 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-2xl">Loading Git Browser...</div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-900 dark:text-white text-2xl">Loading Git Browser...</div>
       </div>
     );
   }
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-900 flex flex-col">
-        <Header repoInfo={repoInfo} />
-        <main className="flex-1 container mx-auto px-4 py-6">
-          <Routes>
-            <Route path="/" element={<GraphPage />} />
-            <Route path="/commits" element={<CommitsPage />} />
-            <Route path="/branches" element={<BranchesPage />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+          <Header repoInfo={repoInfo} />
+          <main className="flex-1 container mx-auto px-4 py-6">
+            <Routes>
+              <Route path="/" element={<GraphPage />} />
+              <Route path="/commits" element={<CommitsPage />} />
+              <Route path="/branches" element={<BranchesPage />} />
+            </Routes>
+          </main>
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 

@@ -144,3 +144,51 @@ class GitObjectParser:
             idx = null_idx + 21
 
         return entries
+
+    def read_blob(self, sha: str) -> Optional[bytes]:
+        """Read blob content by SHA.
+
+        Args:
+            sha: Blob SHA-1 hash
+
+        Returns:
+            Blob content as bytes or None if not found or not a blob
+        """
+        obj_data = self.read_object(sha)
+        if not obj_data or obj_data[0] != "blob":
+            return None
+        return obj_data[1]
+
+    def get_tree_contents(self, tree_sha: str, prefix: str = "") -> Dict[str, str]:
+        """Recursively read tree and return path -> blob_sha mapping.
+
+        Args:
+            tree_sha: Tree object SHA
+            prefix: Path prefix for nested trees
+
+        Returns:
+            Dictionary mapping full file paths to blob SHAs
+        """
+        files = {}
+
+        # Read tree object
+        obj_data = self.read_object(tree_sha)
+        if not obj_data or obj_data[0] != "tree":
+            return files
+
+        # Parse tree entries
+        entries = self.parse_tree(obj_data[1])
+
+        for entry in entries:
+            full_path = os.path.join(prefix, entry["name"]) if prefix else entry["name"]
+
+            if entry["type"] == "blob":
+                # Regular file
+                files[full_path] = entry["sha"]
+            elif entry["type"] == "tree":
+                # Recursively traverse subdirectory
+                sub_files = self.get_tree_contents(entry["sha"], full_path)
+                files.update(sub_files)
+            # Ignore submodules (commit type)
+
+        return files

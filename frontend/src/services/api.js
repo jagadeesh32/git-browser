@@ -62,6 +62,18 @@ export const gitApi = {
     const response = await api.get('/api/health');
     return response.data;
   },
+
+  // Get commit details with file changes
+  getCommitDetails: async (sha) => {
+    const response = await api.get(`/api/commits/${sha}/details`);
+    return response.data;
+  },
+
+  // Get diff for specific file in commit
+  getFileDiff: async (sha, filePath) => {
+    const response = await api.get(`/api/commits/${sha}/files/${encodeURIComponent(filePath)}`);
+    return response.data;
+  },
 };
 
 export default api;

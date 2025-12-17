@@ -1,19 +1,20 @@
 import { Link } from 'react-router-dom';
+import ThemeToggle from './ThemeToggle';
 
 const Header = ({ repoInfo }) => {
   return (
-    <header className="bg-gray-800 text-white shadow-lg">
+    <header className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-lg border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Link to="/" className="text-2xl font-bold text-blue-400 hover:text-blue-300">
+            <Link to="/" className="text-2xl font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
               Git Browser
             </Link>
             {repoInfo && (
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
                 <span className="font-semibold">{repoInfo.path}</span>
                 {repoInfo.current_branch && (
-                  <span className="ml-2 px-2 py-1 bg-green-600 rounded text-xs">
+                  <span className="ml-2 px-2 py-1 bg-green-600 dark:bg-green-600 text-white rounded text-xs">
                     {repoInfo.current_branch}
                   </span>
                 )}
@@ -21,26 +22,29 @@ const Header = ({ repoInfo }) => {
             )}
           </div>
 
-          <nav className="flex space-x-6">
-            <Link
-              to="/"
-              className="hover:text-blue-400 transition-colors"
-            >
-              Graph
-            </Link>
-            <Link
-              to="/commits"
-              className="hover:text-blue-400 transition-colors"
-            >
-              Commits
-            </Link>
-            <Link
-              to="/branches"
-              className="hover:text-blue-400 transition-colors"
-            >
-              Branches
-            </Link>
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav className="flex space-x-6">
+              <Link
+                to="/"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                Graph
+              </Link>
+              <Link
+                to="/commits"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                Commits
+              </Link>
+              <Link
+                to="/branches"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              >
+                Branches
+              </Link>
+            </nav>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>

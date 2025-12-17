@@ -133,6 +133,65 @@ async def get_commit_graph(limit: int = Query(default=500, ge=1, le=2000)):
         raise HTTPException(status_code=500, detail=f"Error getting commit graph: {str(e)}")
 
 
+@router.get("/api/commits/{sha}/details", response_model=GitCommitDetails)
+async def get_commit_details(sha: str):
+    """Get detailed commit information including file changes.
+
+    Args:
+        sha: Commit SHA-1 hash
+    """
+    parser = get_git_parser()
+    try:
+        details = parser.get_commit_details(sha)
+        if not details:
+            raise HTTPException(status_code=404, detail=f"Commit not found: {sha}")
+        return details
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting commit details: {str(e)}")
+
+
+@router.get("/api/commits/{sha}/files/{file_path:path}")
+async def get_file_diff(sha: str, file_path: str):
+    """Get diff for a specific file in a commit.
+
+    Args:
+        sha: Commit SHA-1 hash
+        file_path: Path to the file
+    """
+    parser = get_git_parser()
+    try:
+        commit = parser.get_commit(sha)
+        if not commit:
+            raise HTTPException(status_code=404, detail=f"Commit not found: {sha}")
+
+        # Get parent tree (use first parent for merge commits)
+        parent_tree = None
+        if commit.parents:
+            parent_commit = parser.get_commit(commit.parents[0])
+            if parent_commit:
+                parent_tree = parent_commit.tree
+
+        # Get tree contents
+        old_files = parser.object_parser.get_tree_contents(parent_tree) if parent_tree else {}
+        new_files = parser.object_parser.get_tree_contents(commit.tree)
+
+        old_sha = old_files.get(file_path)
+        new_sha = new_files.get(file_path)
+
+        if not old_sha and not new_sha:
+            raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+
+        diff_data = parser.generate_diff(old_sha, new_sha, file_path)
+        return diff_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting file diff: {str(e)}")
+
+
 @router.get("/api/info")
 async def get_info():
     """Get basic repository information."""
