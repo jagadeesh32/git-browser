@@ -46,7 +46,10 @@ git-browser = "git_browser.cli:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["git_browser*"]
-exclude = ["tests*", "venv*", "frontend*"]
+exclude = ["tests*", "venv*"]
+
+[tool.setuptools.package-data]
+git_browser = ["../frontend/dist/**/*"]
 
 [tool.black]
 line-length = 100

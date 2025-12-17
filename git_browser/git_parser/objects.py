@@ -1,4 +1,5 @@
 """Git object parsers for reading .git directory."""
+
 import os
 import zlib
 import re
@@ -34,11 +35,11 @@ class GitObjectParser:
             decompressed_data = zlib.decompress(compressed_data)
 
             # Git objects format: "type size\0content"
-            null_idx = decompressed_data.index(b'\x00')
-            header = decompressed_data[:null_idx].decode('ascii')
-            content = decompressed_data[null_idx + 1:]
+            null_idx = decompressed_data.index(b"\x00")
+            header = decompressed_data[:null_idx].decode("ascii")
+            content = decompressed_data[null_idx + 1 :]
 
-            obj_type, size = header.split(' ')
+            obj_type, size = header.split(" ")
             return obj_type, content
 
         except Exception as e:
@@ -51,15 +52,15 @@ class GitObjectParser:
         Returns:
             Dictionary with commit information
         """
-        lines = content.decode('utf-8', errors='replace').split('\n')
+        lines = content.decode("utf-8", errors="replace").split("\n")
 
         commit_data = {
-            'tree': '',
-            'parents': [],
-            'author': None,
-            'committer': None,
-            'message': '',
-            'full_message': ''
+            "tree": "",
+            "parents": [],
+            "author": None,
+            "committer": None,
+            "message": "",
+            "full_message": "",
         }
 
         message_lines = []
@@ -68,19 +69,19 @@ class GitObjectParser:
         for line in lines:
             if in_message:
                 message_lines.append(line)
-            elif line.startswith('tree '):
-                commit_data['tree'] = line.split(' ', 1)[1]
-            elif line.startswith('parent '):
-                commit_data['parents'].append(line.split(' ', 1)[1])
-            elif line.startswith('author '):
-                commit_data['author'] = self._parse_author_line(line)
-            elif line.startswith('committer '):
-                commit_data['committer'] = self._parse_author_line(line)
-            elif line == '':
+            elif line.startswith("tree "):
+                commit_data["tree"] = line.split(" ", 1)[1]
+            elif line.startswith("parent "):
+                commit_data["parents"].append(line.split(" ", 1)[1])
+            elif line.startswith("author "):
+                commit_data["author"] = self._parse_author_line(line)
+            elif line.startswith("committer "):
+                commit_data["committer"] = self._parse_author_line(line)
+            elif line == "":
                 in_message = True
 
-        commit_data['full_message'] = '\n'.join(message_lines).strip()
-        commit_data['message'] = message_lines[0] if message_lines else ''
+        commit_data["full_message"] = "\n".join(message_lines).strip()
+        commit_data["message"] = message_lines[0] if message_lines else ""
 
         return commit_data
 
@@ -90,26 +91,21 @@ class GitObjectParser:
         Format: "author Name <email> timestamp timezone"
         """
         # Remove the prefix (author/committer)
-        line = line.split(' ', 1)[1]
+        line = line.split(" ", 1)[1]
 
         # Extract name and email
-        match = re.match(r'^(.+) <(.+)> (\d+) ([+-]\d{4})$', line)
+        match = re.match(r"^(.+) <(.+)> (\d+) ([+-]\d{4})$", line)
         if not match:
             return {
-                'name': 'Unknown',
-                'email': 'unknown@example.com',
-                'timestamp': 0,
-                'timezone': '+0000'
+                "name": "Unknown",
+                "email": "unknown@example.com",
+                "timestamp": 0,
+                "timezone": "+0000",
             }
 
         name, email, timestamp, timezone = match.groups()
 
-        return {
-            'name': name,
-            'email': email,
-            'timestamp': int(timestamp),
-            'timezone': timezone
-        }
+        return {"name": name, "email": email, "timestamp": int(timestamp), "timezone": timezone}
 
     def parse_tree(self, content: bytes) -> list:
         """Parse a tree object.
@@ -122,33 +118,28 @@ class GitObjectParser:
 
         while idx < len(content):
             # Find the space (after mode)
-            space_idx = content.index(b' ', idx)
-            mode = content[idx:space_idx].decode('ascii')
+            space_idx = content.index(b" ", idx)
+            mode = content[idx:space_idx].decode("ascii")
 
             # Find the null byte (after filename)
-            null_idx = content.index(b'\x00', space_idx)
-            name = content[space_idx + 1:null_idx].decode('utf-8', errors='replace')
+            null_idx = content.index(b"\x00", space_idx)
+            name = content[space_idx + 1 : null_idx].decode("utf-8", errors="replace")
 
             # Next 20 bytes are the SHA-1 hash
-            sha_bytes = content[null_idx + 1:null_idx + 21]
+            sha_bytes = content[null_idx + 1 : null_idx + 21]
             sha = sha_bytes.hex()
 
             # Determine type from mode
-            if mode.startswith('100'):
-                obj_type = 'blob'
-            elif mode == '40000' or mode == '040000':
-                obj_type = 'tree'
-            elif mode == '160000':
-                obj_type = 'commit'  # submodule
+            if mode.startswith("100"):
+                obj_type = "blob"
+            elif mode == "40000" or mode == "040000":
+                obj_type = "tree"
+            elif mode == "160000":
+                obj_type = "commit"  # submodule
             else:
-                obj_type = 'unknown'
+                obj_type = "unknown"
 
-            entries.append({
-                'mode': mode,
-                'type': obj_type,
-                'sha': sha,
-                'name': name
-            })
+            entries.append({"mode": mode, "type": obj_type, "sha": sha, "name": name})
 
             idx = null_idx + 21
 

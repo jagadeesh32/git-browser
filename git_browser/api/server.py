@@ -1,4 +1,5 @@
 """FastAPI server for Git browser."""
+
 import os
 from pathlib import Path
 from fastapi import FastAPI
@@ -22,7 +23,7 @@ def create_app(repo_path: str) -> FastAPI:
     app = FastAPI(
         title="Git Browser API",
         description="REST API for browsing Git repository history",
-        version="0.1.0"
+        version="0.1.0",
     )
 
     # Configure CORS
@@ -76,7 +77,7 @@ def create_app(repo_path: str) -> FastAPI:
             "service": "git-browser",
             "version": "0.1.0",
             "api_docs": "/docs",
-            "repository": str(parser.repo_path)
+            "repository": str(parser.repo_path),
         }
 
     return app

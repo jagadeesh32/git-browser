@@ -1,12 +1,17 @@
 """FastAPI routes for Git browser API."""
+
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from pathlib import Path
 
 from ..git_parser.parser import GitParser
 from ..git_parser.models import (
-    GitRepository, GitBranch, GitTag, GitCommit,
-    GitCommitDetails, GitGraphNode
+    GitRepository,
+    GitBranch,
+    GitTag,
+    GitCommit,
+    GitCommitDetails,
+    GitGraphNode,
 )
 
 router = APIRouter()
@@ -68,10 +73,7 @@ async def get_tags():
 
 
 @router.get("/api/commits", response_model=List[GitCommit])
-async def get_commits(
-    limit: int = Query(default=100, ge=1, le=1000),
-    branch: Optional[str] = None
-):
+async def get_commits(limit: int = Query(default=100, ge=1, le=1000), branch: Optional[str] = None):
     """Get commits from the repository.
 
     Args:
@@ -149,10 +151,7 @@ async def get_info():
             "branch_count": len(branches),
             "tag_count": len(tags),
             "recent_commits": len(sample_commits),
-            "branches": [
-                {"name": b.name, "is_current": b.is_current}
-                for b in branches
-            ]
+            "branches": [{"name": b.name, "is_current": b.is_current} for b in branches],
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting info: {str(e)}")

@@ -1,4 +1,5 @@
 """Command-line interface for git-browser."""
+
 import os
 import sys
 import argparse
@@ -44,40 +45,26 @@ Examples:
   git-browser /path/to/repo    # Start browser for specific repository
   git-browser --port 8080      # Use custom port
   git-browser --no-browser     # Don't open browser automatically
-        """
+        """,
     )
 
     parser.add_argument(
-        "path",
-        nargs="?",
-        default=".",
-        help="Path to Git repository (default: current directory)"
+        "path", nargs="?", default=".", help="Path to Git repository (default: current directory)"
     )
 
     parser.add_argument(
-        "-p", "--port",
-        type=int,
-        default=8000,
-        help="Port to run the server on (default: 8000)"
+        "-p", "--port", type=int, default=8000, help="Port to run the server on (default: 8000)"
     )
 
     parser.add_argument(
-        "--host",
-        default="127.0.0.1",
-        help="Host to bind the server to (default: 127.0.0.1)"
+        "--host", default="127.0.0.1", help="Host to bind the server to (default: 127.0.0.1)"
     )
 
     parser.add_argument(
-        "--no-browser",
-        action="store_true",
-        help="Don't open the browser automatically"
+        "--no-browser", action="store_true", help="Don't open the browser automatically"
     )
 
-    parser.add_argument(
-        "--reload",
-        action="store_true",
-        help="Enable auto-reload for development"
-    )
+    parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
 
     args = parser.parse_args()
 
@@ -122,13 +109,7 @@ Examples:
 
     # Start the server
     try:
-        uvicorn.run(
-            app,
-            host=args.host,
-            port=args.port,
-            log_level="info",
-            reload=args.reload
-        )
+        uvicorn.run(app, host=args.host, port=args.port, log_level="info", reload=args.reload)
     except KeyboardInterrupt:
         print("\n\nShutting down Git Browser...")
         sys.exit(0)
