@@ -39,7 +39,7 @@ const GraphPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-white text-xl">Loading commit graph...</div>
+        <div className="text-gray-900 dark:text-white text-xl">Loading commit graph...</div>
       </div>
     );
   }
@@ -47,21 +47,30 @@ const GraphPage = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-red-500 text-xl">{error}</div>
+        <div className="text-red-600 dark:text-red-400 text-xl">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 flex gap-4">
-        <div className="flex-1">
-          <GitGraph graphData={graphData} onNodeClick={handleNodeClick} />
-        </div>
-        <div className="w-96">
+    <div className="h-full flex flex-col gap-4">
+      {/* Full-width graph at top */}
+      <div className="h-1/2 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        <GitGraph graphData={graphData} onNodeClick={handleNodeClick} />
+      </div>
+
+      {/* Commit details below (conditional) */}
+      {selectedCommit ? (
+        <div className="flex-1 overflow-auto">
           <CommitDetails commit={selectedCommit} />
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-gray-500 dark:text-gray-400 text-lg">
+            Click a commit in the graph above to view details
+          </p>
+        </div>
+      )}
     </div>
   );
 };

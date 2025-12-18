@@ -33,9 +33,10 @@ const GitGraph = ({ graphData, onNodeClick }) => {
     const edges = [];
     graphData.forEach((node) => {
       node.parents.forEach((parentSha) => {
+        // Reverse edge direction for LR layout: parent (left/old) → child (right/new)
         edges.push({
-          from: node.sha,
-          to: parentSha,
+          from: parentSha,
+          to: node.sha,
           arrows: 'to',
           color: {
             color: '#666666',
@@ -50,10 +51,10 @@ const GitGraph = ({ graphData, onNodeClick }) => {
     const options = {
       layout: {
         hierarchical: {
-          direction: 'UD',
+          direction: 'LR', // Left-to-Right (oldest → newest)
           sortMethod: 'directed',
-          nodeSpacing: 150,
-          levelSeparation: 150,
+          nodeSpacing: 200, // Increased for horizontal layout
+          levelSeparation: 250, // Increased for horizontal layout
         },
       },
       physics: {
@@ -62,7 +63,7 @@ const GitGraph = ({ graphData, onNodeClick }) => {
       edges: {
         smooth: {
           type: 'cubicBezier',
-          forceDirection: 'vertical',
+          forceDirection: 'horizontal', // Horizontal force direction
         },
       },
       interaction: {
@@ -101,8 +102,8 @@ const GitGraph = ({ graphData, onNodeClick }) => {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full bg-gray-900"
-      style={{ minHeight: '600px' }}
+      className="w-full h-full bg-gray-100 dark:bg-gray-900"
+      style={{ minHeight: '400px' }}
     />
   );
 };

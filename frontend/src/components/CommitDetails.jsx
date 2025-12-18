@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { gitApi } from '../services/api';
-import FileList from './FileList';
+import FileTree from './FileTree';
 import DiffViewer from './DiffViewer';
 import ViewToggle from './ViewToggle';
 
@@ -142,7 +142,7 @@ const CommitDetails = ({ commit }) => {
               {' '}
               <span className="text-red-600 dark:text-red-400">-{commitDetails.stats.deletions}</span>
             </div>
-            <FileList
+            <FileTree
               files={commitDetails.files}
               onFileClick={setSelectedFile}
               selectedFile={selectedFile}

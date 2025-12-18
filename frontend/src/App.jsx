@@ -39,12 +39,14 @@ function App() {
       <Router>
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
           <Header repoInfo={repoInfo} />
-          <main className="flex-1 container mx-auto px-4 py-6">
-            <Routes>
-              <Route path="/" element={<GraphPage />} />
-              <Route path="/commits" element={<CommitsPage />} />
-              <Route path="/branches" element={<BranchesPage />} />
-            </Routes>
+          <main className="flex-1 overflow-hidden">
+            <div className="h-[calc(100vh-4rem)] px-4 py-4 md:px-6 md:py-6">
+              <Routes>
+                <Route path="/" element={<GraphPage />} />
+                <Route path="/commits" element={<CommitsPage />} />
+                <Route path="/branches" element={<BranchesPage />} />
+              </Routes>
+            </div>
           </main>
         </div>
       </Router>

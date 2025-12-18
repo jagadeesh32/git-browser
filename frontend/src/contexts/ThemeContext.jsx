@@ -11,14 +11,16 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  // Theme can be 'light', 'dark', or 'system'
+  // Theme can be 'light' or 'dark' only
   const [theme, setTheme] = useState(() => {
-    // Get theme from localStorage or default to 'system'
-    return localStorage.getItem('theme') || 'system';
+    // Get theme from localStorage with validation
+    const stored = localStorage.getItem('theme');
+    // Validate and handle old 'system' values by defaulting to 'light'
+    if (stored === 'light' || stored === 'dark') {
+      return stored;
+    }
+    return 'light'; // Default to light mode
   });
-
-  // Computed effective theme (resolves 'system' to actual theme)
-  const [effectiveTheme, setEffectiveTheme] = useState('dark');
 
   useEffect(() => {
     const root = window.document.documentElement;
