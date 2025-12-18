@@ -25,37 +25,11 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Function to apply theme to DOM
-    const applyTheme = (newTheme) => {
-      if (newTheme === 'dark') {
-        root.classList.add('dark');
-        setEffectiveTheme('dark');
-      } else {
-        root.classList.remove('dark');
-        setEffectiveTheme('light');
-      }
-    };
-
-    // Handle system theme
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-      // Apply initial system theme
-      applyTheme(mediaQuery.matches ? 'dark' : 'light');
-
-      // Listen for system theme changes
-      const handleChange = (e) => {
-        applyTheme(e.matches ? 'dark' : 'light');
-      };
-
-      mediaQuery.addEventListener('change', handleChange);
-
-      return () => {
-        mediaQuery.removeEventListener('change', handleChange);
-      };
+    // Apply theme to DOM
+    if (theme === 'dark') {
+      root.classList.add('dark');
     } else {
-      // Apply explicit theme
-      applyTheme(theme);
+      root.classList.remove('dark');
     }
   }, [theme]);
 
@@ -65,7 +39,7 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, effectiveTheme, changeTheme }}>
+    <ThemeContext.Provider value={{ theme, changeTheme }}>
       {children}
     </ThemeContext.Provider>
   );

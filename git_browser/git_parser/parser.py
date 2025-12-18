@@ -219,13 +219,18 @@ class GitParser:
 
         return commits
 
-    def get_commit_graph(self, max_commits: int = 1000) -> List[GitGraphNode]:
+    def get_commit_graph(self, branches: Optional[List[GitBranch]] = None, max_commits: int = 1000) -> List[GitGraphNode]:
         """Get commit graph for visualization.
+
+        Args:
+            branches: Optional list of branches to include. If None, includes all branches.
+            max_commits: Maximum number of commits to include
 
         Returns:
             List of GitGraphNode objects
         """
-        branches = self.get_branches()
+        if branches is None:
+            branches = self.get_branches()
         tags = self.get_tags()
         commits = self.get_all_commits(branches, max_commits)
 
@@ -258,6 +263,75 @@ class GitParser:
             graph_nodes.append(node)
 
         return graph_nodes
+
+    def filter_commits(
+        self,
+        commits: List[GitCommit],
+        author: Optional[str] = None,
+        search: Optional[str] = None,
+        since: Optional[int] = None,
+        until: Optional[int] = None,
+        file_path: Optional[str] = None,
+    ) -> List[GitCommit]:
+        """Filter commits based on various criteria.
+
+        Args:
+            commits: List of commits to filter
+            author: Filter by author name or email (case-insensitive)
+            search: Search in commit message (case-insensitive)
+            since: Only commits after this timestamp
+            until: Only commits before this timestamp
+            file_path: Only commits that modified this file path
+
+        Returns:
+            Filtered list of commits
+        """
+        filtered = commits
+
+        # Filter by author
+        if author:
+            author_lower = author.lower()
+            filtered = [
+                c for c in filtered
+                if author_lower in c.author.name.lower() or author_lower in c.author.email.lower()
+            ]
+
+        # Filter by message search
+        if search:
+            search_lower = search.lower()
+            filtered = [
+                c for c in filtered
+                if search_lower in c.message.lower() or search_lower in c.full_message.lower()
+            ]
+
+        # Filter by timestamp range
+        if since:
+            filtered = [c for c in filtered if c.author.timestamp >= since]
+
+        if until:
+            filtered = [c for c in filtered if c.author.timestamp <= until]
+
+        # Filter by file path (expensive - requires tree comparison)
+        if file_path:
+            filtered_by_file = []
+            for commit in filtered:
+                # Get parent tree
+                parent_tree = None
+                if commit.parents:
+                    parent_commit = self.get_commit(commit.parents[0])
+                    if parent_commit:
+                        parent_tree = parent_commit.tree
+
+                # Get changed files
+                files = self.compare_trees(parent_tree, commit.tree)
+
+                # Check if our file is in the changes
+                if any(f.path == file_path or f.path.startswith(file_path + '/') for f in files):
+                    filtered_by_file.append(commit)
+
+            filtered = filtered_by_file
+
+        return filtered
 
     def compare_trees(self, old_tree_sha: Optional[str], new_tree_sha: str) -> List[GitFileChange]:
         """Compare two trees and return file changes.

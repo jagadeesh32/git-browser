@@ -62,8 +62,50 @@ const getFileIcon = (fileName) => {
   return <Icon className="w-4 h-4" />;
 };
 
+// Sort entries based on mode
+const sortEntries = (entries, mode) => {
+  return [...entries].sort(([aName, aNode], [bName, bNode]) => {
+    // Folders always first
+    if (aNode.type !== bNode.type) {
+      return aNode.type === 'folder' ? -1 : 1;
+    }
+
+    switch (mode) {
+      case 'changes':
+        if (aNode.type === 'file' && bNode.type === 'file') {
+          const aChanges = aNode.data.additions + aNode.data.deletions;
+          const bChanges = bNode.data.additions + bNode.data.deletions;
+          return bChanges - aChanges; // Descending
+        }
+        return aName.localeCompare(bName);
+
+      case 'type':
+        if (aNode.type === 'file' && bNode.type === 'file') {
+          const aExt = aName.split('.').pop()?.toLowerCase() || '';
+          const bExt = bName.split('.').pop()?.toLowerCase() || '';
+          const extCompare = aExt.localeCompare(bExt);
+          if (extCompare !== 0) return extCompare;
+        }
+        return aName.localeCompare(bName);
+
+      case 'changeType':
+        if (aNode.type === 'file' && bNode.type === 'file') {
+          const typeOrder = { added: 0, modified: 1, deleted: 2 };
+          const aOrder = typeOrder[aNode.data.change_type] || 999;
+          const bOrder = typeOrder[bNode.data.change_type] || 999;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+        }
+        return aName.localeCompare(bName);
+
+      case 'alphabetical':
+      default:
+        return aName.localeCompare(bName);
+    }
+  });
+};
+
 // Recursive tree node component
-const TreeNode = ({ name, node, depth, path, selectedFile, onFileClick, expandedFolders, toggleFolder }) => {
+const TreeNode = ({ name, node, depth, path, selectedFile, onFileClick, expandedFolders, toggleFolder, sortMode }) => {
   const isExpanded = expandedFolders.has(path);
 
   if (node.type === 'folder') {
@@ -98,27 +140,20 @@ const TreeNode = ({ name, node, depth, path, selectedFile, onFileClick, expanded
         {/* Children (when expanded) */}
         {isExpanded && hasChildren && (
           <div>
-            {Object.entries(children)
-              .sort(([aName, aNode], [bName, bNode]) => {
-                // Folders first, then files
-                if (aNode.type !== bNode.type) {
-                  return aNode.type === 'folder' ? -1 : 1;
-                }
-                return aName.localeCompare(bName);
-              })
-              .map(([childName, childNode]) => (
-                <TreeNode
-                  key={`${path}/${childName}`}
-                  name={childName}
-                  node={childNode}
-                  depth={depth + 1}
-                  path={`${path}/${childName}`}
-                  selectedFile={selectedFile}
-                  onFileClick={onFileClick}
-                  expandedFolders={expandedFolders}
-                  toggleFolder={toggleFolder}
-                />
-              ))}
+            {sortEntries(Object.entries(children), sortMode).map(([childName, childNode]) => (
+              <TreeNode
+                key={`${path}/${childName}`}
+                name={childName}
+                node={childNode}
+                depth={depth + 1}
+                path={`${path}/${childName}`}
+                selectedFile={selectedFile}
+                onFileClick={onFileClick}
+                expandedFolders={expandedFolders}
+                toggleFolder={toggleFolder}
+                sortMode={sortMode}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -175,6 +210,7 @@ const TreeNode = ({ name, node, depth, path, selectedFile, onFileClick, expanded
 
 const FileTree = ({ files, onFileClick, selectedFile }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set());
+  const [sortMode, setSortMode] = useState('alphabetical');
 
   // Build tree structure
   const tree = useMemo(() => buildFileTree(files || []), [files]);
@@ -199,27 +235,39 @@ const FileTree = ({ files, onFileClick, selectedFile }) => {
 
   return (
     <div className="py-2">
-      {Object.entries(tree)
-        .sort(([aName, aNode], [bName, bNode]) => {
-          // Folders first, then files
-          if (aNode.type !== bNode.type) {
-            return aNode.type === 'folder' ? -1 : 1;
-          }
-          return aName.localeCompare(bName);
-        })
-        .map(([name, node]) => (
-          <TreeNode
-            key={name}
-            name={name}
-            node={node}
-            depth={0}
-            path={name}
-            selectedFile={selectedFile}
-            onFileClick={onFileClick}
-            expandedFolders={expandedFolders}
-            toggleFolder={toggleFolder}
-          />
-        ))}
+      {/* Sort mode selector */}
+      <div className="px-2 mb-3">
+        <label htmlFor="file-sort" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Sort by:
+        </label>
+        <select
+          id="file-sort"
+          value={sortMode}
+          onChange={(e) => setSortMode(e.target.value)}
+          className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="alphabetical">Alphabetical</option>
+          <option value="changes">Most Changes</option>
+          <option value="type">File Type</option>
+          <option value="changeType">Change Type</option>
+        </select>
+      </div>
+
+      {/* File tree */}
+      {sortEntries(Object.entries(tree), sortMode).map(([name, node]) => (
+        <TreeNode
+          key={name}
+          name={name}
+          node={node}
+          depth={0}
+          path={name}
+          selectedFile={selectedFile}
+          onFileClick={onFileClick}
+          expandedFolders={expandedFolders}
+          toggleFolder={toggleFolder}
+          sortMode={sortMode}
+        />
+      ))}
     </div>
   );
 };

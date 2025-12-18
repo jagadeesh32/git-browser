@@ -29,12 +29,16 @@ export const gitApi = {
     return response.data;
   },
 
-  // Get commits
-  getCommits: async (limit = 100, branch = null) => {
+  // Get commits with optional filters
+  getCommits: async (limit = 100, branch = null, filters = {}) => {
     const params = { limit };
-    if (branch) {
-      params.branch = branch;
-    }
+    if (branch) params.branch = branch;
+    if (filters.author) params.author = filters.author;
+    if (filters.search) params.search = filters.search;
+    if (filters.since) params.since = filters.since;
+    if (filters.until) params.until = filters.until;
+    if (filters.file) params.file = filters.file;
+
     const response = await api.get('/api/commits', { params });
     return response.data;
   },
@@ -46,8 +50,12 @@ export const gitApi = {
   },
 
   // Get commit graph
-  getGraph: async (limit = 500) => {
-    const response = await api.get('/api/graph', { params: { limit } });
+  getGraph: async (limit = 500, branch = null) => {
+    const params = { limit };
+    if (branch) {
+      params.branch = branch;
+    }
+    const response = await api.get('/api/graph', { params });
     return response.data;
   },
 
@@ -72,6 +80,12 @@ export const gitApi = {
   // Get diff for specific file in commit
   getFileDiff: async (sha, filePath) => {
     const response = await api.get(`/api/commits/${sha}/files/${encodeURIComponent(filePath)}`);
+    return response.data;
+  },
+
+  // Compare two commits
+  compareCommits: async (sha1, sha2) => {
+    const response = await api.get(`/api/commits/${sha1}/compare/${sha2}`);
     return response.data;
   },
 };

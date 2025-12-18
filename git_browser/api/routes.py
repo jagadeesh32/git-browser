@@ -73,12 +73,25 @@ async def get_tags():
 
 
 @router.get("/api/commits", response_model=List[GitCommit])
-async def get_commits(limit: int = Query(default=100, ge=1, le=1000), branch: Optional[str] = None):
-    """Get commits from the repository.
+async def get_commits(
+    limit: int = Query(default=100, ge=1, le=1000),
+    branch: Optional[str] = None,
+    author: Optional[str] = None,
+    search: Optional[str] = None,
+    since: Optional[int] = None,
+    until: Optional[int] = None,
+    file: Optional[str] = None,
+):
+    """Get commits from the repository with optional filters.
 
     Args:
         limit: Maximum number of commits to return
         branch: Optional branch name to filter commits
+        author: Filter by author name or email (case-insensitive substring match)
+        search: Search in commit messages (case-insensitive substring match)
+        since: Only commits after this timestamp (unix timestamp)
+        until: Only commits before this timestamp (unix timestamp)
+        file: Only commits that modified this file path
     """
     parser = get_git_parser()
     try:
@@ -91,8 +104,23 @@ async def get_commits(limit: int = Query(default=100, ge=1, le=1000), branch: Op
                 raise HTTPException(status_code=404, detail=f"Branch not found: {branch}")
             branches = [branch_obj]
 
-        commits = parser.get_all_commits(branches, max_commits=limit)
-        return commits
+        # Get more commits initially if filtering (since filters reduce results)
+        fetch_limit = limit * 3 if (author or search or since or until or file) else limit
+        commits = parser.get_all_commits(branches, max_commits=fetch_limit)
+
+        # Apply filters
+        if author or search or since or until or file:
+            commits = parser.filter_commits(
+                commits=commits,
+                author=author,
+                search=search,
+                since=since,
+                until=until,
+                file_path=file,
+            )
+
+        # Apply limit after filtering
+        return commits[:limit]
     except HTTPException:
         raise
     except Exception as e:
@@ -119,15 +147,25 @@ async def get_commit(sha: str):
 
 
 @router.get("/api/graph", response_model=List[GitGraphNode])
-async def get_commit_graph(limit: int = Query(default=500, ge=1, le=2000)):
+async def get_commit_graph(limit: int = Query(default=500, ge=1, le=2000), branch: Optional[str] = None):
     """Get commit graph for visualization.
 
     Args:
         limit: Maximum number of commits to include in graph
+        branch: Optional branch name to filter commits
     """
     parser = get_git_parser()
     try:
-        graph = parser.get_commit_graph(max_commits=limit)
+        branches = parser.get_branches()
+
+        if branch:
+            # Filter to specific branch
+            branch_obj = next((b for b in branches if b.name == branch), None)
+            if branch_obj:
+                branches = [branch_obj]
+            # If branch not found, gracefully show all (no error)
+
+        graph = parser.get_commit_graph(branches=branches, max_commits=limit)
         return graph
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting commit graph: {str(e)}")
@@ -190,6 +228,49 @@ async def get_file_diff(sha: str, file_path: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting file diff: {str(e)}")
+
+
+@router.get("/api/commits/{sha1}/compare/{sha2}")
+async def compare_commits(sha1: str, sha2: str):
+    """Compare two commits and return file differences.
+
+    Args:
+        sha1: First commit SHA (base)
+        sha2: Second commit SHA (compare against)
+
+    Returns:
+        Comparison data including both commits, files changed, and stats
+    """
+    parser = get_git_parser()
+    try:
+        commit1 = parser.get_commit(sha1)
+        commit2 = parser.get_commit(sha2)
+
+        if not commit1:
+            raise HTTPException(status_code=404, detail=f"Commit not found: {sha1}")
+        if not commit2:
+            raise HTTPException(status_code=404, detail=f"Commit not found: {sha2}")
+
+        # Compare trees
+        files = parser.compare_trees(commit1.tree, commit2.tree)
+
+        # Calculate stats
+        stats = {
+            "files_changed": len(files),
+            "additions": sum(f.additions for f in files),
+            "deletions": sum(f.deletions for f in files),
+        }
+
+        return {
+            "commit1": commit1,
+            "commit2": commit2,
+            "files": files,
+            "stats": stats,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error comparing commits: {str(e)}")
 
 
 @router.get("/api/info")

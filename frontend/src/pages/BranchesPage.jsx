@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { gitApi } from '../services/api';
 import BranchList from '../components/BranchList';
 import CommitList from '../components/CommitList';
-import CommitDetailsModal from '../components/CommitDetailsModal';
+import CommitDetails from '../components/CommitDetails';
 
 const BranchesPage = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [branchCommits, setBranchCommits] = useState([]);
   const [selectedCommit, setSelectedCommit] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -46,14 +45,9 @@ const BranchesPage = () => {
     try {
       const commit = await gitApi.getCommit(sha);
       setSelectedCommit(commit);
-      setIsModalOpen(true); // Open modal instead of inline display
     } catch (err) {
       console.error('Error loading commit:', err);
     }
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
   };
 
   if (loading) {
@@ -74,32 +68,42 @@ const BranchesPage = () => {
 
   return (
     <div className="h-full">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-        {/* Branch list */}
-        <BranchList branches={branches} onBranchClick={handleBranchClick} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+        {/* Column 1: Branch list (25%) */}
+        <div className="overflow-auto">
+          <BranchList branches={branches} onBranchClick={handleBranchClick} />
+        </div>
 
-        {/* Commit list (only show when branch selected) */}
+        {/* Column 2: Commit list (25%) - only show when branch selected */}
         {selectedBranch ? (
-          <CommitList
-            commits={branchCommits}
-            onCommitClick={handleCommitClick}
-            selectedSha={selectedCommit?.sha}
-          />
+          <div className="overflow-auto">
+            <CommitList
+              commits={branchCommits}
+              onCommitClick={handleCommitClick}
+              selectedSha={selectedCommit?.sha}
+            />
+          </div>
         ) : (
           <div className="flex items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="text-gray-500 dark:text-gray-400 text-lg">
-              Select a branch to view its commits
+              Select a branch to view commits
+            </p>
+          </div>
+        )}
+
+        {/* Column 3: Commit details (50%) - only show when commit selected */}
+        {selectedCommit ? (
+          <div className="overflow-auto">
+            <CommitDetails commit={selectedCommit} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <p className="text-gray-500 dark:text-gray-400 text-lg">
+              Select a commit to view details
             </p>
           </div>
         )}
       </div>
-
-      {/* Modal for commit details */}
-      <CommitDetailsModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        commit={selectedCommit}
-      />
     </div>
   );
 };
