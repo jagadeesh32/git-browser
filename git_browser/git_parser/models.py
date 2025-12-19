@@ -81,3 +81,20 @@ class GitRepository(BaseModel):
     tags: List[GitTag]
     commits: List[GitCommit]
     current_branch: Optional[str] = None
+
+
+class FileStatus(BaseModel):
+    """Status of a file in the working directory."""
+    path: str
+    status: str  # "modified", "added", "deleted", "untracked", "renamed", "copied"
+    staged: bool
+
+
+class RepoStatus(BaseModel):
+    """Current status of the repository."""
+    branch: str
+    staged: List[FileStatus]
+    unstaged: List[FileStatus]
+    untracked: List[str]
+    ahead: int = 0
+    behind: int = 0

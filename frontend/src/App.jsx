@@ -1,56 +1,26 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { gitApi } from './services/api';
-import { ThemeProvider } from './contexts/ThemeContext';
-import Header from './components/Header';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
 import GraphPage from './pages/GraphPage';
 import CommitsPage from './pages/CommitsPage';
 import BranchesPage from './pages/BranchesPage';
+import StatusPage from './pages/StatusPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
-  const [repoInfo, setRepoInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadRepoInfo();
-  }, []);
-
-  const loadRepoInfo = async () => {
-    try {
-      const info = await gitApi.getInfo();
-      setRepoInfo(info);
-    } catch (error) {
-      console.error('Error loading repository info:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-gray-900 dark:text-white text-2xl">Loading Git Browser...</div>
-      </div>
-    );
-  }
-
   return (
-    <ThemeProvider>
-      <Router>
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-          <Header repoInfo={repoInfo} />
-          <main className="flex-1 overflow-hidden">
-            <div className="h-[calc(100vh-4rem)] px-4 py-4 md:px-6 md:py-6">
-              <Routes>
-                <Route path="/" element={<GraphPage />} />
-                <Route path="/commits" element={<CommitsPage />} />
-                <Route path="/branches" element={<BranchesPage />} />
-              </Routes>
-            </div>
-          </main>
-        </div>
-      </Router>
-    </ThemeProvider>
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Navigate to="/status" replace />} />
+          <Route path="/graph" element={<GraphPage />} />
+          <Route path="/commits" element={<CommitsPage />} />
+          <Route path="/branches" element={<BranchesPage />} />
+          <Route path="/status" element={<StatusPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Routes>
+      </Layout>
+    </Router>
   );
 }
 

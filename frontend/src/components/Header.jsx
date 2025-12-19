@@ -23,26 +23,12 @@ const Header = ({ repoInfo }) => {
           </div>
 
           <div className="flex items-center gap-4">
-            <nav className="flex space-x-6">
-              <Link
-                to="/"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Graph
-              </Link>
-              <Link
-                to="/commits"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Commits
-              </Link>
-              <Link
-                to="/branches"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                Branches
-              </Link>
-            </nav>
+          <nav className="flex space-x-4">
+            <NavLink to="/graph" label="Graph" active={location.pathname === '/graph'} />
+            <NavLink to="/commits" label="Commits" active={location.pathname === '/commits'} />
+            <NavLink to="/branches" label="Branches" active={location.pathname === '/branches'} />
+            <NavLink to="/status" label="Status" active={location.pathname === '/status'} />
+          </nav>
             <ThemeToggle />
           </div>
         </div>

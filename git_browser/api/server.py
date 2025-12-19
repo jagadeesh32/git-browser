@@ -7,8 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from .routes import router, set_git_parser
+from .routes import router, set_git_parser, set_git_client
 from ..git_parser.parser import GitParser
+from ..git_client import GitClient
 
 
 def create_app(repo_path: str) -> FastAPI:
@@ -35,10 +36,14 @@ def create_app(repo_path: str) -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Initialize Git parser
+    # Initialize Git parser and client
     try:
         parser = GitParser(repo_path)
         set_git_parser(parser)
+        
+        client = GitClient(repo_path)
+        set_git_client(client)
+        
         print(f"✓ Git repository loaded: {parser.repo_path}")
         print(f"✓ Current branch: {parser.get_current_branch()}")
     except Exception as e:

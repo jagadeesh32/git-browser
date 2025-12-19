@@ -88,6 +88,72 @@ export const gitApi = {
     const response = await api.get(`/api/commits/${sha1}/compare/${sha2}`);
     return response.data;
   },
+
+  // Status & Operations
+  getStatus: async () => {
+    const response = await api.get('/api/status');
+    return response.data;
+  },
+
+  stageFile: async (path) => {
+    const response = await api.post('/api/stage', { path });
+    return response.data;
+  },
+
+  unstageFile: async (path) => {
+    const response = await api.post('/api/unstage', { path });
+    return response.data;
+  },
+
+  commit: async (message) => {
+    const response = await api.post('/api/commit', { message });
+    return response.data;
+  },
+
+  push: async () => {
+    const response = await api.post('/api/push');
+    return response.data;
+  },
+
+  pull: async () => {
+    const response = await api.post('/api/pull');
+    return response.data;
+  },
+
+  fetch: async () => {
+    const response = await api.post('/api/fetch');
+    return response.data;
+  },
+
+  createBranch: async (name) => {
+    const response = await api.post('/api/branches', { name });
+    return response.data;
+  },
+
+  deleteBranch: async (name) => {
+    const response = await api.delete(`/api/branches/${name}`);
+    return response.data;
+  },
+
+  checkout: async (branch) => {
+    const response = await api.post('/api/checkout', { branch });
+    return response.data;
+  },
+
+  getWorkingDiff: async (path, staged = false) => {
+    const response = await api.get('/api/diff', { params: { path, staged } });
+    return response.data;
+  },
+
+  getConfig: async (key) => {
+    const response = await api.get('/api/config', { params: { key } });
+    return response.data;
+  },
+
+  setConfig: async (key, value) => {
+    const response = await api.post('/api/config', { key, value });
+    return response.data;
+  },
 };
 
 export default api;

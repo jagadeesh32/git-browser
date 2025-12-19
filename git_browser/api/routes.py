@@ -1,10 +1,11 @@
 """FastAPI routes for Git browser API."""
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
 from typing import List, Optional
 from pathlib import Path
 
 from ..git_parser.parser import GitParser
+from ..git_client import GitClient
 from ..git_parser.models import (
     GitRepository,
     GitBranch,
@@ -12,12 +13,14 @@ from ..git_parser.models import (
     GitCommit,
     GitCommitDetails,
     GitGraphNode,
+    RepoStatus,
 )
 
 router = APIRouter()
 
-# Global parser instance (will be set by the server)
+# Global parser and client instances
 _git_parser: Optional[GitParser] = None
+_git_client: Optional[GitClient] = None
 
 
 def set_git_parser(parser: GitParser):
@@ -31,6 +34,19 @@ def get_git_parser() -> GitParser:
     if _git_parser is None:
         raise HTTPException(status_code=500, detail="Git parser not initialized")
     return _git_parser
+
+
+def set_git_client(client: GitClient):
+    """Set the global Git client instance."""
+    global _git_client
+    _git_client = client
+
+
+def get_git_client() -> GitClient:
+    """Get the global Git client instance."""
+    if _git_client is None:
+        raise HTTPException(status_code=500, detail="Git client not initialized")
+    return _git_client
 
 
 @router.get("/api/health")
@@ -295,3 +311,143 @@ async def get_info():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting info: {str(e)}")
+
+
+@router.get("/api/status", response_model=RepoStatus)
+async def get_status():
+    """Get current repository status (changed files, branch info)."""
+    client = get_git_client()
+    try:
+        return client.get_status()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting status: {str(e)}")
+
+
+@router.post("/api/stage")
+async def stage_file(path: str = Body(..., embed=True)):
+    """Stage a file."""
+    client = get_git_client()
+    try:
+        client.stage_file(path)
+        return {"status": "success", "message": f"Staged {path}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error staging file: {str(e)}")
+
+
+@router.post("/api/unstage")
+async def unstage_file(path: str = Body(..., embed=True)):
+    """Unstage a file."""
+    client = get_git_client()
+    try:
+        client.unstage_file(path)
+        return {"status": "success", "message": f"Unstaged {path}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error unstaging file: {str(e)}")
+
+
+@router.post("/api/commit")
+async def commit_changes(message: str = Body(..., embed=True)):
+    """Commit staged changes."""
+    client = get_git_client()
+    try:
+        client.commit(message)
+        return {"status": "success", "message": "Commit created"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error committing: {str(e)}")
+
+
+@router.post("/api/push")
+async def push_changes():
+    """Push changes to remote."""
+    client = get_git_client()
+    try:
+        client.push()
+        return {"status": "success", "message": "Pushed to remote"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error pushing: {str(e)}")
+
+
+@router.post("/api/pull")
+async def pull_changes():
+    """Pull changes from remote."""
+    client = get_git_client()
+    try:
+        client.pull()
+        return {"status": "success", "message": "Pulled from remote"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error pulling: {str(e)}")
+
+
+@router.post("/api/fetch")
+async def fetch_changes():
+    """Fetch changes from remote."""
+    client = get_git_client()
+    try:
+        client.fetch()
+        return {"status": "success", "message": "Fetched from remote"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching: {str(e)}")
+
+
+@router.post("/api/branches")
+async def create_branch(name: str = Body(..., embed=True)):
+    """Create a new branch."""
+    client = get_git_client()
+    try:
+        client.create_branch(name)
+        return {"status": "success", "message": f"Created branch {name}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating branch: {str(e)}")
+
+
+@router.delete("/api/branches/{name}")
+async def delete_branch(name: str):
+    """Delete a branch."""
+    client = get_git_client()
+    try:
+        client.delete_branch(name)
+        return {"status": "success", "message": f"Deleted branch {name}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting branch: {str(e)}")
+
+
+@router.post("/api/checkout")
+async def checkout_branch(branch: str = Body(..., embed=True)):
+    """Checkout a branch."""
+    client = get_git_client()
+    try:
+        client.checkout_branch(branch)
+        return {"status": "success", "message": f"Checked out {branch}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking out branch: {str(e)}")
+
+
+@router.get("/api/diff")
+async def get_working_diff(path: str, staged: bool = False):
+    """Get diff for a file in working directory."""
+    client = get_git_client()
+    try:
+        return client.get_diff(path, staged)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting diff: {str(e)}")
+
+
+@router.get("/api/config")
+async def get_config(key: str):
+    """Get git config value."""
+    client = get_git_client()
+    try:
+        return {"value": client.get_config(key)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting config: {str(e)}")
+
+
+@router.post("/api/config")
+async def set_config(key: str = Body(..., embed=True), value: str = Body(..., embed=True)):
+    """Set git config value."""
+    client = get_git_client()
+    try:
+        client.set_config(key, value)
+        return {"status": "success", "message": f"Set {key} to {value}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error setting config: {str(e)}")

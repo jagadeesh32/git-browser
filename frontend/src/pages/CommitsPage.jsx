@@ -98,7 +98,7 @@ const CommitsPage = () => {
             type="checkbox"
             checked={compareMode}
             onChange={(e) => handleCompareModeToggle(e.target.checked)}
-            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
           />
           <span className="text-sm font-medium text-gray-900 dark:text-white">
             Compare Mode
@@ -151,7 +151,7 @@ const CommitsPage = () => {
               <CommitDetails commit={selectedCommit} />
             </div>
           ) : (
-            <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex-1 flex items-center justify-center bg-white dark:bg-[#1e1e1e] rounded-lg border border-gray-200 dark:border-gray-800 transition-colors duration-200">
               <p className="text-gray-500 dark:text-gray-400 text-lg">
                 {compareMode
                   ? 'Select 2 commits to compare'
